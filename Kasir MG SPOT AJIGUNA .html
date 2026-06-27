@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MG Spot — Kasir</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+  :root {
+    --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--surface3:#2e2e2e;
+    --border:#333;--accent:#f97316;--text:#f5f5f5;--text2:#a3a3a3;--text3:#6b6b6b;
+    --green:#22c55e;--red:#ef4444;--blue:#3b82f6;--radius:12px;--radius-sm:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden}
+
+  /* TOPBAR */
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:12px 16px;height:56px}
+  .topbar-logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--accent);letter-spacing:-0.5px}
+  .topbar-logo span{color:var(--text2);font-weight:500}
+  .topbar-right{display:flex;align-items:center;gap:10px}
+  .topbar-time{font-size:12px;color:var(--text2);text-align:right}
+
+  /* BT STATUS PILL */
+  .bt-pill{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .15s;font-size:11px;font-weight:600;white-space:nowrap;color:var(--text2)}
+  .bt-pill.connected{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.1)}
+  .bt-pill.connecting{border-color:var(--accent);color:var(--accent);background:rgba(249,115,22,.1)}
+  .bt-dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .bt-dot.pulse{animation:pulse 1.2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* BOTTOM NAV */
+  .bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--surface);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+  .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:4px;background:none;border:none;cursor:pointer;color:var(--text3);font-size:10px;font-family:inherit;transition:color .15s}
+  .nav-btn.active{color:var(--accent)}
+  .nav-btn svg{width:22px;height:22px}
+
+  /* PAGES */
+  .page{display:none;padding:72px 0 80px;min-height:100dvh}
+  .page.active{display:block}
+
+  /* KASIR */
+  .category-bar{position:sticky;top:56px;z-index:50;background:var(--bg);display:flex;gap:8px;padding:12px 16px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border)}
+  .category-bar::-webkit-scrollbar{display:none}
+  .cat-chip{white-space:nowrap;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:13px;font-family:inherit;cursor:pointer;transition:all .15s}
+  .cat-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px}
+  .menu-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+  .menu-card:active{transform:scale(.97)}
+  .menu-card.in-cart{border-color:var(--accent)}
+  .menu-card-emoji{font-size:28px;margin-bottom:8px}
+  .menu-card-name{font-size:13px;font-weight:600;margin-bottom:4px;line-height:1.3}
+  .menu-card-price{font-size:13px;color:var(--accent);font-weight:700}
+  .menu-card-badge{position:absolute;top:8px;right:8px;background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+
+  /* CART FAB */
+  .cart-fab{position:fixed;bottom:72px;right:16px;z-index:90;background:var(--accent);color:#fff;border:none;border-radius:50px;display:flex;align-items:center;gap:10px;padding:14px 20px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 24px rgba(249,115,22,.5);transition:all .2s;font-family:inherit}
+  .cart-fab:active{transform:scale(.95)}
+  .cart-fab.hidden{display:none}
+
+  /* DRAWER */
+  .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
+  .drawer-overlay.open{opacity:1;pointer-events:all}
+  .drawer{position:fixed;bottom:0;left:0;right:0;z-index:201;background:var(--surface);border-radius:20px 20px 0 0;max-height:85dvh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+  .drawer.open{transform:translateY(0)}
+  .drawer-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0}
+  .drawer-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border)}
+  .drawer-title{font-size:17px;font-weight:700}
+  .drawer-clear{font-size:13px;color:var(--red);background:none;border:none;cursor:pointer;font-family:inherit}
+  .drawer-body{overflow-y:auto;flex:1}
+  .cart-item{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border)}
+  .cart-item-info{flex:1}
+  .cart-item-name{font-size:14px;font-weight:600}
+  .cart-item-price{font-size:13px;color:var(--text2);margin-top:2px}
+  .qty-ctrl{display:flex;align-items:center;gap:10px}
+  .qty-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit}
+  .qty-btn.minus{color:var(--red)}
+  .qty-btn.plus{color:var(--green);background:rgba(34,197,94,.1);border-color:var(--green)}
+  .qty-num{font-size:15px;font-weight:700;min-width:20px;text-align:center}
+  .note-field{margin:0 20px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-size:13px;font-family:inherit;width:calc(100% - 40px);resize:none;outline:none;transition:border-color .15s}
+  .note-field:focus{border-color:var(--accent)}
+  .drawer-footer{padding:16px 20px;border-top:1px solid var(--border)}
+  .total-row{display:flex;justify-content:space-between;margin-bottom:14px}
+  .total-label{font-size:15px;color:var(--text2)}
+  .total-value{font-size:20px;font-weight:700;color:var(--accent)}
+  .customer-row{display:flex;gap:8px;margin-bottom:12px}
+  .customer-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border-color .15s}
+  .customer-input:focus{border-color:var(--accent)}
+  .pay-row{display:flex;gap:8px}
+  .btn-pay{flex:1;padding:14px;border-radius:var(--radius);border:none;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s}
+  .btn-pay:active{transform:scale(.97)}
+  .btn-pay.primary{background:var(--accent);color:#fff}
+  .btn-pay.secondary{background:var(--surface3);color:var(--text);border:1px solid var(--border)}
+
+  /* MENU MGMT */
+  .page-header{padding:16px;border-bottom:1px solid var(--border)}
+  .page-title{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700}
+  .page-subtitle{font-size:13px;color:var(--text2);margin-top:2px}
+  .add-menu-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:12px 16px;padding:16px}
+  .add-menu-title{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text2)}
+  .form-group{margin-bottom:10px}
+  .form-label{font-size:12px;color:var(--text2);margin-bottom:4px;display:block}
+  .form-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border-color .15s}
+  .form-input:focus{border-color:var(--accent)}
+  .form-row{display:flex;gap:8px}
+  .form-row .form-group{flex:1}
+  .btn-add-menu{width:100%;padding:12px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px;transition:opacity .15s}
+  .btn-add-menu:active{opacity:.85}
+  .menu-list{padding:0 16px 16px}
+  .menu-list-title{font-size:13px;color:var(--text2);margin-bottom:10px;padding-top:8px}
+  .menu-list-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .menu-list-emoji{font-size:22px}
+  .menu-list-info{flex:1}
+  .menu-list-name{font-size:14px;font-weight:600}
+  .menu-list-meta{font-size:12px;color:var(--text2);margin-top:2px}
+  .menu-list-actions{display:flex;gap:6px}
+  .btn-icon{width:32px;height:32px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+  .btn-icon.del{border-color:rgba(239,68,68,.3);color:var(--red)}
+  .btn-icon.edit{color:var(--blue)}
+
+  /* RIWAYAT */
+  .tx-list{padding:12px 16px}
+  .tx-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+  .tx-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+  .tx-id{font-size:12px;color:var(--text3)}
+  .tx-total{font-size:16px;font-weight:700;color:var(--accent)}
+  .tx-customer{font-size:14px;font-weight:600}
+  .tx-time{font-size:12px;color:var(--text2);margin-top:2px}
+  .tx-items{font-size:12px;color:var(--text2);margin-top:6px}
+  .tx-actions{display:flex;gap:8px;margin-top:10px}
+  .btn-reprint{flex:1;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
+
+  /* PRINT MODAL */
+  .print-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+  .print-modal-overlay.open{opacity:1;pointer-events:all}
+  .print-preview-wrap{background:#fff;border-radius:8px;max-height:55dvh;overflow-y:auto;width:220px}
+  .receipt{font-family:'Courier New',monospace;font-size:11px;color:#000;padding:12px;line-height:1.5;width:100%}
+  .receipt-center{text-align:center}
+  .receipt-bold{font-weight:bold}
+  .receipt-line{border-top:1px dashed #000;margin:6px 0}
+  .receipt-row{display:flex;justify-content:space-between}
+  .receipt-item-name{flex:1;word-break:break-word}
+  .receipt-item-right{text-align:right;white-space:nowrap;padding-left:4px}
+  .print-actions{display:flex;gap:10px;margin-top:14px;width:100%;max-width:320px}
+  .print-btn{flex:1;padding:14px;border-radius:var(--radius);border:none;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s}
+  .print-btn.orange{background:var(--accent);color:#fff}
+  .print-btn.gray{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+  .print-tab-row{display:flex;gap:6px;margin-bottom:10px;width:220px}
+  .print-tab{flex:1;padding:7px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
+  .print-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  /* BT SETTINGS PAGE */
+  .bt-section{padding:16px}
+  .bt-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+  .bt-card-title{font-size:14px;font-weight:700;margin-bottom:4px}
+  .bt-card-sub{font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5}
+  .bt-status-big{display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:12px}
+  .bt-status-icon{font-size:24px}
+  .bt-status-info{flex:1}
+  .bt-status-name{font-size:14px;font-weight:600}
+  .bt-status-desc{font-size:12px;color:var(--text2);margin-top:2px}
+  .btn-bt{width:100%;padding:13px;border-radius:var(--radius-sm);border:none;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s;margin-bottom:8px}
+  .btn-bt.connect{background:var(--accent);color:#fff}
+  .btn-bt.disconnect{background:var(--surface3);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+  .btn-bt.test{background:var(--surface3);color:var(--text);border:1px solid var(--border)}
+  .info-box{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:var(--radius-sm);padding:12px;font-size:12px;color:#93c5fd;line-height:1.6}
+  .info-box b{color:var(--blue)}
+
+  /* EMPTY & TOAST */
+  .empty-state{text-align:center;padding:60px 32px;color:var(--text3)}
+  .empty-state p{font-size:14px}
+  .toast{position:fixed;top:68px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--green);color:#fff;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:600;z-index:500;transition:transform .3s;white-space:nowrap}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast.error{background:var(--red)}
+  .toast.info{background:var(--blue)}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">MG<span> Spot</span></div>
+  <div class="topbar-right">
+    <button class="bt-pill" id="btPill" onclick="goPage('bluetooth')">
+      <div class="bt-dot" id="btDot"></div>
+      <span id="btPillText">Bluetooth</span>
+    </button>
+    <div class="topbar-time" id="clock"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══ PAGE: KASIR ══ -->
+<div class="page active" id="page-kasir">
+  <div class="category-bar" id="categoryBar"></div>
+  <div class="menu-grid" id="menuGrid"></div>
+  <button class="cart-fab hidden" id="cartFab" onclick="openDrawer()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+    <span id="cartFabText">0 item</span>
+    <span id="cartFabTotal"></span>
+  </button>
+</div>
+
+<!-- ══ PAGE: MENU ══ -->
+<div class="page" id="page-menu">
+  <div class="page-header">
+    <div class="page-title">Manajemen Menu</div>
+    <div class="page-subtitle">Tambah, edit, hapus item menu</div>
+  </div>
+  <div class="add-menu-card">
+    <div class="add-menu-title" id="formMode">+ Tambah Menu Baru</div>
+    <input type="hidden" id="editId">
+    <div class="form-group">
+      <label class="form-label">Nama Menu *</label>
+      <input class="form-input" id="inpName" placeholder="cth: Es Teh Manis" type="text">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Kategori</label>
+        <input class="form-input" id="inpCat" placeholder="Minuman">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emoji</label>
+        <input class="form-input" id="inpEmoji" placeholder="🧋" maxlength="4">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">HPP (Rp) *</label>
+        <input class="form-input" id="inpHpp" placeholder="5000" type="number">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Harga Jual (Rp) *</label>
+        <input class="form-input" id="inpPrice" placeholder="15000" type="number">
+      </div>
+    </div>
+    <button class="btn-add-menu" id="btnSubmitMenu" onclick="submitMenu()">Simpan Menu</button>
+    <button class="btn-add-menu" id="btnCancelEdit" style="display:none;background:var(--surface3);border:1px solid var(--border);margin-top:6px" onclick="cancelEdit()">Batal</button>
+  </div>
+  <div class="menu-list">
+    <div class="menu-list-title" id="menuCountLabel">Memuat...</div>
+    <div id="menuListItems"></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: RIWAYAT ══ -->
+<div class="page" id="page-riwayat">
+  <div class="page-header">
+    <div class="page-title">Riwayat Transaksi</div>
+    <div class="page-subtitle">Tap untuk cetak ulang via Bluetooth</div>
+  </div>
+  <div class="tx-list" id="txList"></div>
+</div>
+
+<!-- ══ PAGE: BLUETOOTH ══ -->
+<div class="page" id="page-bluetooth">
+  <div class="page-header">
+    <div class="page-title">Printer Bluetooth</div>
+    <div class="page-subtitle">Hubungkan printer thermal 58mm</div>
+  </div>
+  <div class="bt-section">
+    <div class="bt-card">
+      <div class="bt-card-title">Status Koneksi</div>
+      <div class="bt-card-sub">Printer thermal generic (POS-58, RPP02, dll)</div>
+      <div class="bt-status-big">
+        <div class="bt-status-icon" id="btStatusIcon">🔌</div>
+        <div class="bt-status-info">
+          <div class="bt-status-name" id="btStatusName">Belum terhubung</div>
+          <div class="bt-status-desc" id="btStatusDesc">Tap "Hubungkan" untuk mulai pairing</div>
+        </div>
+      </div>
+      <button class="btn-bt connect" id="btnBtConnect" onclick="btConnect()">🔵 Hubungkan Printer</button>
+      <button class="btn-bt disconnect" id="btnBtDisconnect" style="display:none" onclick="btDisconnect()">✕ Putuskan Koneksi</button>
+      <button class="btn-bt test" id="btnBtTest" style="display:none" onclick="btTest()">🖨 Cetak Test</button>
+    </div>
+
+    <div class="bt-card">
+      <div class="bt-card-title">Mode Cetak</div>
+      <div class="bt-card-sub">Pilih metode fallback jika Bluetooth tidak tersedia</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-bt test" style="margin:0" onclick="setPrintMode('bluetooth')">📡 Bluetooth</button>
+        <button class="btn-bt test" style="margin:0" onclick="setPrintMode('window')">🪟 Print Dialog</button>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--text2)">Mode aktif: <b id="printModeLabel" style="color:var(--accent)">Bluetooth</b></div>
+    </div>
+
+    <div class="info-box">
+      <b>Cara pairing:</b><br>
+      1. Nyalakan printer, aktifkan Bluetooth HP<br>
+      2. Tap <b>Hubungkan Printer</b> di atas<br>
+      3. Pilih printer dari daftar yang muncul<br>
+      4. Cetak test untuk memastikan koneksi<br><br>
+      <b>Syarat:</b> Chrome Android versi 56+, aktifkan izin Bluetooth di pengaturan browser
+    </div>
+  </div>
+</div>
+
+<!-- ══ CART DRAWER ══ -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-header">
+    <div class="drawer-title">Pesanan</div>
+    <button class="drawer-clear" onclick="clearCart()">Hapus Semua</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-footer">
+    <div class="customer-row">
+      <input class="customer-input" id="inpCustomer" placeholder="Nama / No. Meja (opsional)">
+    </div>
+    <div class="total-row">
+      <span class="total-label">Total</span>
+      <span class="total-value" id="drawerTotal">Rp 0</span>
+    </div>
+    <div class="pay-row">
+      <button class="btn-pay secondary" onclick="closeDrawer()">Kembali</button>
+      <button class="btn-pay primary" onclick="processPayment()">Bayar & Cetak</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PRINT MODAL ══ -->
+<div class="print-modal-overlay" id="printModal">
+  <div style="text-align:center;color:#fff;margin-bottom:10px;font-size:15px;font-weight:700">Preview Struk</div>
+  <div class="print-tab-row">
+    <button class="print-tab active" id="tabCust" onclick="switchPreview('customer')">🧾 Pelanggan</button>
+    <button class="print-tab" id="tabKit" onclick="switchPreview('kitchen')">👨‍🍳 Dapur</button>
+  </div>
+  <div class="print-preview-wrap" id="previewWrap"></div>
+  <div id="btPrintStatus" style="color:#a3a3a3;font-size:12px;margin-top:8px;min-height:18px;text-align:center"></div>
+  <div class="print-actions">
+    <button class="print-btn gray" onclick="closePrintModal()">Tutup</button>
+    <button class="print-btn orange" onclick="doPrint()">🖨 Cetak 2 Lembar</button>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottomnav">
+  <button class="nav-btn active" id="nav-kasir" onclick="goPage('kasir')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    Kasir
+  </button>
+  <button class="nav-btn" id="nav-menu" onclick="goPage('menu')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Menu
+  </button>
+  <button class="nav-btn" id="nav-riwayat" onclick="goPage('riwayat')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    Riwayat
+  </button>
+  <button class="nav-btn" id="nav-bluetooth" onclick="goPage('bluetooth')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/></svg>
+    Printer
+  </button>
+</nav>
+
+<script>
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let menus = JSON.parse(localStorage.getItem('mg_menus')||'[]');
+let cart = [];
+let transactions = JSON.parse(localStorage.getItem('mg_transactions')||'[]');
+let currentPrintData = null;
+let previewType = 'customer';
+let printMode = localStorage.getItem('mg_printmode')||'bluetooth';
+
+// Default menu
+if(menus.length===0){
+  menus=[
+    {id:1,name:'Es Teh Manis',category:'Minuman',emoji:'🧋',hpp:2000,price:8000},
+    {id:2,name:'Es Jeruk',category:'Minuman',emoji:'🍊',hpp:3000,price:10000},
+    {id:3,name:'Kopi Susu',category:'Kopi',emoji:'☕',hpp:4000,price:15000},
+    {id:4,name:'Americano',category:'Kopi',emoji:'🫖',hpp:3500,price:12000},
+    {id:5,name:'Nasi Goreng',category:'Makanan',emoji:'🍳',hpp:8000,price:20000},
+    {id:6,name:'Mie Goreng',category:'Makanan',emoji:'🍜',hpp:7000,price:18000},
+    {id:7,name:'Kentang Goreng',category:'Snack',emoji:'🍟',hpp:5000,price:13000},
+    {id:8,name:'Roti Bakar',category:'Snack',emoji:'🍞',hpp:4000,price:12000},
+  ];
+  saveMenus();
+}
+
+function saveMenus(){ localStorage.setItem('mg_menus',JSON.stringify(menus)); }
+function saveTx(){ localStorage.setItem('mg_transactions',JSON.stringify(transactions)); }
+function setPrintMode(m){ printMode=m; localStorage.setItem('mg_printmode',m); document.getElementById('printModeLabel').textContent=m==='bluetooth'?'Bluetooth':'Print Dialog (Popup)'; showToast('Mode cetak: '+(m==='bluetooth'?'Bluetooth':'Print Dialog')); }
+
+// ══════════════════════════════════════════
+//  BLUETOOTH ESC/POS ENGINE
+// ══════════════════════════════════════════
+// Service & characteristic UUIDs for generic BT thermal printers
+const BT_SERVICE   = '000018f0-0000-1000-8000-00805f9b34fb';
+const BT_CHAR      = '00002af1-0000-1000-8000-00805f9b34fb';
+// Fallback UUIDs (some printers use different UUIDs)
+const BT_SERVICE_ALT  = '0000ff00-0000-1000-8000-00805f9b34fb';
+const BT_CHAR_ALT     = '0000ff02-0000-1000-8000-00805f9b34fb';
+
+let btDevice = null;
+let btChar = null;
+
+async function btConnect(){
+  if(!navigator.bluetooth){ showToast('Web Bluetooth tidak didukung browser ini','error'); return; }
+  updateBtUI('connecting');
+  try {
+    btDevice = await navigator.bluetooth.requestDevice({
+      filters:[
+        {services:[BT_SERVICE]},
+        {services:[BT_SERVICE_ALT]},
+        {namePrefix:'POS'},
+        {namePrefix:'RPP'},
+        {namePrefix:'MTP'},
+        {namePrefix:'Printer'},
+        {namePrefix:'BlueTooth Printer'},
+        {namePrefix:'BT Printer'},
+      ],
+      optionalServices:[BT_SERVICE, BT_SERVICE_ALT,
+        '000018f0-0000-1000-8000-00805f9b34fb',
+        '0000ff00-0000-1000-8000-00805f9b34fb',
+        'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+      ]
+    });
+
+    btDevice.addEventListener('gattserverdisconnected', onBtDisconnect);
+    const server = await btDevice.gatt.connect();
+
+    // Try primary service first, then alt
+    let service, characteristic;
+    try {
+      service = await server.getPrimaryService(BT_SERVICE);
+      characteristic = await service.getCharacteristic(BT_CHAR);
+    } catch(_){
+      try {
+        service = await server.getPrimaryService(BT_SERVICE_ALT);
+        characteristic = await service.getCharacteristic(BT_CHAR_ALT);
+      } catch(__){
+        // Last resort: get all services and find writable char
+        const services = await server.getPrimaryServices();
+        for(const svc of services){
+          const chars = await svc.getCharacteristics();
+          for(const ch of chars){
+            if(ch.properties.write || ch.properties.writeWithoutResponse){
+              service = svc; characteristic = ch; break;
+            }
+          }
+          if(characteristic) break;
+        }
+      }
+    }
+
+    if(!characteristic) throw new Error('Tidak ditemukan karakteristik yang bisa ditulis');
+    btChar = characteristic;
+    updateBtUI('connected', btDevice.name||'Printer');
+    showToast('✅ Printer terhubung: '+(btDevice.name||'Unknown'));
+  } catch(e){
+    btDevice=null; btChar=null;
+    updateBtUI('disconnected');
+    if(e.name!=='NotFoundError') showToast('Gagal: '+e.message,'error');
+  }
+}
+
+async function btDisconnect(){
+  if(btDevice && btDevice.gatt.connected) btDevice.gatt.disconnect();
+  btDevice=null; btChar=null;
+  updateBtUI('disconnected');
+  showToast('Printer diputus');
+}
+
+function onBtDisconnect(){
+  btChar=null;
+  updateBtUI('disconnected');
+  showToast('Printer terputus','error');
+}
+
+function updateBtUI(state, name=''){
+  const pill=document.getElementById('btPill');
+  const dot=document.getElementById('btDot');
+  const pillTxt=document.getElementById('btPillText');
+  const icon=document.getElementById('btStatusIcon');
+  const sname=document.getElementById('btStatusName');
+  const sdesc=document.getElementById('btStatusDesc');
+  const btnConn=document.getElementById('btnBtConnect');
+  const btnDisc=document.getElementById('btnBtDisconnect');
+  const btnTest=document.getElementById('btnBtTest');
+
+  if(state==='connected'){
+    pill.className='bt-pill connected';
+    dot.className='bt-dot';
+    pillTxt.textContent=name||'Terhubung';
+    icon.textContent='🖨️';
+    sname.textContent=name||'Printer Terhubung';
+    sdesc.textContent='Siap cetak via Bluetooth';
+    btnConn.style.display='none';
+    btnDisc.style.display='block';
+    btnTest.style.display='block';
+  } else if(state==='connecting'){
+    pill.className='bt-pill connecting';
+    dot.className='bt-dot pulse';
+    pillTxt.textContent='Menghubungkan...';
+    icon.textContent='🔄';
+    sname.textContent='Menghubungkan...';
+    sdesc.textContent='Pilih printer dari daftar Bluetooth';
+    btnConn.style.display='none';
+    btnDisc.style.display='none';
+    btnTest.style.display='none';
+  } else {
+    pill.className='bt-pill';
+    dot.className='bt-dot';
+    pillTxt.textContent='Bluetooth';
+    icon.textContent='🔌';
+    sname.textContent='Belum terhubung';
+    sdesc.textContent='Tap "Hubungkan" untuk mulai pairing';
+    btnConn.style.display='block';
+    btnDisc.style.display='none';
+    btnTest.style.display='none';
+  }
+}
+
+// ── ESC/POS Builder ──
+const ESC=0x1B, GS=0x1D;
+function escpos(){
+  const buf=[];
+  const api={
+    init(){ buf.push(ESC,0x40); return api },
+    align(a){ buf.push(ESC,0x61,a==='center'?1:a==='right'?2:0); return api },
+    bold(on){ buf.push(ESC,0x45,on?1:0); return api },
+    size(w,h){ buf.push(GS,0x21,((w-1)<<4)|(h-1)); return api },
+    text(str){
+      for(let i=0;i<str.length;i++){
+        const c=str.charCodeAt(i);
+        if(c<128) buf.push(c);
+        else { buf.push(0x3F); } // '?' for non-ASCII
+      }
+      return api;
+    },
+    textLatin(str){
+      // encode Indonesian chars
+      const map={'à':0xe0,'á':0xe1,'â':0xe2,'ä':0xe4,'è':0xe8,'é':0xe9,'ê':0xea,'ë':0xeb,'ì':0xec,'í':0xed,'î':0xee,'ï':0xef,'ò':0xf2,'ó':0xf3,'ô':0xf4,'ö':0xf6,'ù':0xfa,'ú':0xfb,'û':0xfc,'ü':0xfc};
+      for(let i=0;i<str.length;i++){
+        const ch=str[i], c=str.charCodeAt(i);
+        if(map[ch]) buf.push(map[ch]);
+        else if(c<128) buf.push(c);
+        else buf.push(0x3F);
+      }
+      return api;
+    },
+    nl(n=1){ for(let i=0;i<n;i++) buf.push(0x0A); return api },
+    line(){ 
+      const dash='-'.repeat(32);
+      for(const c of dash) buf.push(c.charCodeAt(0));
+      buf.push(0x0A); return api;
+    },
+    dashedLine(){
+      const dash='- '.repeat(16);
+      for(const c of dash) buf.push(c.charCodeAt(0));
+      buf.push(0x0A); return api;
+    },
+    row(left,right,width=32){
+      const space=width-left.length-right.length;
+      const line=left+' '.repeat(Math.max(1,space))+right;
+      return api.textLatin(line).nl();
+    },
+    cut(){ buf.push(GS,0x56,0x42,0x00); return api },
+    beep(){ buf.push(ESC,0x42,0x03,0x02); return api },
+    bytes(){ return new Uint8Array(buf) }
+  };
+  return api;
+}
+
+// ── Send to printer in chunks ──
+async function btSend(data){
+  if(!btChar) throw new Error('Printer belum terhubung');
+  const CHUNK=100;
+  for(let i=0;i<data.length;i+=CHUNK){
+    const slice=data.slice(i,i+CHUNK);
+    if(btChar.properties.writeWithoutResponse)
+      await btChar.writeValueWithoutResponse(slice);
+    else
+      await btChar.writeValue(slice);
+    await new Promise(r=>setTimeout(r,30));
+  }
+}
+
+// ── Build ESC/POS receipt bytes ──
+function buildEscposReceipt(tx, type){
+  const now=new Date(tx.time);
+  const tgl=now.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const jam=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+
+  const p=escpos().init();
+
+  // Header
+  p.align('center').bold(true).size(2,2).text('MG SPOT').nl()
+   .size(1,1).bold(false).text('Makanan & Minuman').nl()
+   .text('Melayani dengan sepenuh hati').nl()
+   .dashedLine()
+   .bold(true).text(type==='customer'?'STRUK PELANGGAN':'STRUK DAPUR').nl()
+   .bold(false).dashedLine();
+
+  // Info
+  p.align('left')
+   .row('No    :',tx.id)
+   .row('Tgl   :',tgl+' '+jam)
+   .row('Meja  :',tx.customer.substring(0,16))
+   .dashedLine();
+
+  if(type==='customer'){
+    // Items with price
+    tx.items.forEach(item=>{
+      const name=item.name.length>18?item.name.substring(0,17)+'.':item.name;
+      p.textLatin(name).nl();
+      p.row('  '+item.qty+'x '+fmtShort(item.price), fmtRp(item.price*item.qty));
+      if(item.note) p.textLatin('  Catatan: '+item.note.substring(0,20)).nl();
+    });
+    p.dashedLine()
+     .bold(true).size(1,2).row('TOTAL', fmtRp(tx.total))
+     .size(1,1).bold(false).dashedLine()
+     .align('center').text('Terima kasih sudah berkunjung!').nl()
+     .text('Sampai jumpa kembali :)').nl();
+  } else {
+    // Kitchen: big text, name + qty only
+    tx.items.forEach(item=>{
+      p.bold(true).size(1,2).textLatin(item.name.substring(0,16)).nl()
+       .size(1,1).bold(false).textLatin('  Qty: '+item.qty+'x').nl();
+      if(item.note) p.textLatin('  >> '+item.note.substring(0,22)).nl();
+    });
+    p.dashedLine().align('center').bold(true).text('** SEGERA DIPROSES **').nl().bold(false);
+  }
+
+  p.nl(3).cut().beep();
+  return p.bytes();
+}
+
+async function btTest(){
+  try {
+    const p=escpos().init()
+      .align('center').bold(true).size(2,2).text('MG SPOT').nl()
+      .size(1,1).bold(false).text('Test Printer Berhasil!').nl()
+      .text('Bluetooth Terhubung').nl()
+      .nl(2).cut();
+    setBtPrintStatus('⏳ Mencetak test...');
+    await btSend(p.bytes());
+    setBtPrintStatus('✅ Test berhasil dicetak!');
+    showToast('Test cetak berhasil!');
+  } catch(e){
+    setBtPrintStatus('❌ Gagal: '+e.message);
+    showToast('Gagal: '+e.message,'error');
+  }
+}
+
+// ══════════════════════════════════════════
+//  CLOCK
+// ══════════════════════════════════════════
+function updateClock(){
+  const now=new Date();
+  const d=now.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'});
+  const t=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('clock').innerHTML=d+'<br><b>'+t+'</b>';
+}
+setInterval(updateClock,1000); updateClock();
+
+// ══════════════════════════════════════════
+//  NAV
+// ══════════════════════════════════════════
+function goPage(p){
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  const nb=document.getElementById('nav-'+p);
+  if(nb) nb.classList.add('active');
+  if(p==='menu') renderMenuList();
+  if(p==='riwayat') renderTx();
+  if(p==='kasir') renderKasir();
+  if(p==='bluetooth') document.getElementById('printModeLabel').textContent=printMode==='bluetooth'?'Bluetooth':'Print Dialog (Popup)';
+}
+
+// ══════════════════════════════════════════
+//  KASIR
+// ══════════════════════════════════════════
+let activeCat='Semua';
+function renderKasir(){
+  const cats=['Semua',...new Set(menus.map(m=>m.category))];
+  document.getElementById('categoryBar').innerHTML=cats.map(c=>
+    `<button class="cat-chip ${c===activeCat?'active':''}" onclick="filterCat('${c}')">${c}</button>`
+  ).join('');
+  renderMenuGrid();
+}
+function filterCat(c){ activeCat=c; renderKasir(); }
+function renderMenuGrid(){
+  const filtered=activeCat==='Semua'?menus:menus.filter(m=>m.category===activeCat);
+  const grid=document.getElementById('menuGrid');
+  if(!filtered.length){ grid.innerHTML=`<div style="grid-column:1/-1"><div class="empty-state"><p>Belum ada menu</p></div></div>`; return; }
+  grid.innerHTML=filtered.map(m=>{
+    const qty=(cart.find(c=>c.id===m.id)||{qty:0}).qty;
+    return `<div class="menu-card ${qty>0?'in-cart':''}" onclick="addToCart(${m.id})">
+      <div class="menu-card-emoji">${m.emoji||'🍽️'}</div>
+      <div class="menu-card-name">${m.name}</div>
+      <div class="menu-card-price">${fmtRp(m.price)}</div>
+      ${qty>0?`<div class="menu-card-badge">${qty}</div>`:''}
+    </div>`;
+  }).join('');
+}
+function addToCart(id){
+  const menu=menus.find(m=>m.id===id); if(!menu) return;
+  const ex=cart.find(c=>c.id===id);
+  if(ex) ex.qty++; else cart.push({...menu,qty:1,note:''});
+  updateCartFab(); renderMenuGrid();
+  showToast((menu.emoji||'')+'  '+menu.name+' ditambahkan');
+}
+function updateCartFab(){
+  const fab=document.getElementById('cartFab');
+  if(!cart.length){ fab.classList.add('hidden'); return; }
+  fab.classList.remove('hidden');
+  document.getElementById('cartFabText').textContent=cart.reduce((s,c)=>s+c.qty,0)+' item';
+  document.getElementById('cartFabTotal').textContent=fmtRp(cartTotal());
+}
+function cartTotal(){ return cart.reduce((s,c)=>s+c.price*c.qty,0); }
+
+// ══════════════════════════════════════════
+//  DRAWER
+// ══════════════════════════════════════════
+function openDrawer(){ document.getElementById('drawer').classList.add('open'); document.getElementById('drawerOverlay').classList.add('open'); renderDrawer(); }
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('drawerOverlay').classList.remove('open'); }
+function renderDrawer(){
+  const body=document.getElementById('drawerBody');
+  if(!cart.length){ body.innerHTML=`<div class="empty-state"><p>Keranjang kosong</p></div>`; }
+  else body.innerHTML=cart.map((c,i)=>`
+    <div class="cart-item">
+      <div class="cart-item-info">
+        <div class="cart-item-name">${c.emoji||''} ${c.name}</div>
+        <div class="cart-item-price">${fmtRp(c.price)} x ${c.qty} = <b>${fmtRp(c.price*c.qty)}</b></div>
+      </div>
+      <div class="qty-ctrl">
+        <button class="qty-btn minus" onclick="changeQty(${i},-1)">-</button>
+        <span class="qty-num">${c.qty}</span>
+        <button class="qty-btn plus" onclick="changeQty(${i},1)">+</button>
+      </div>
+    </div>
+    <textarea class="note-field" rows="1" placeholder="Catatan item ini..." onchange="updateNote(${i},this.value)">${c.note||''}</textarea>
+  `).join('');
+  document.getElementById('drawerTotal').textContent=fmtRp(cartTotal());
+}
+function changeQty(i,d){ cart[i].qty+=d; if(cart[i].qty<=0) cart.splice(i,1); updateCartFab(); renderDrawer(); renderMenuGrid(); }
+function updateNote(i,v){ cart[i].note=v; }
+function clearCart(){ cart=[]; updateCartFab(); renderDrawer(); renderMenuGrid(); }
+
+// ══════════════════════════════════════════
+//  PAYMENT
+// ══════════════════════════════════════════
+function processPayment(){
+  if(!cart.length){ showToast('Keranjang kosong!','error'); return; }
+  const customer=document.getElementById('inpCustomer').value.trim()||'Pelanggan';
+  const now=new Date();
+  const txId='MG'+now.getFullYear()+(now.getMonth()+1).toString().padStart(2,'0')+now.getDate().toString().padStart(2,'0')+'-'+String(transactions.length+1).padStart(4,'0');
+  const tx={id:txId,customer,items:JSON.parse(JSON.stringify(cart)),total:cartTotal(),time:now.toISOString()};
+  transactions.unshift(tx); saveTx();
+  currentPrintData=tx; previewType='customer';
+  showPrintModal(tx);
+  cart=[]; document.getElementById('inpCustomer').value='';
+  updateCartFab(); closeDrawer();
+}
+
+// ══════════════════════════════════════════
+//  PRINT
+// ══════════════════════════════════════════
+function showPrintModal(tx){
+  previewType='customer';
+  document.getElementById('tabCust').className='print-tab active';
+  document.getElementById('tabKit').className='print-tab';
+  document.getElementById('previewWrap').innerHTML=buildHtmlReceipt(tx,'customer');
+  setBtPrintStatus(btChar?'🖨️ Printer terhubung — siap cetak Bluetooth':'⚠️ Printer belum terhubung — akan pakai print dialog');
+  document.getElementById('printModal').classList.add('open');
+}
+function closePrintModal(){ document.getElementById('printModal').classList.remove('open'); }
+function switchPreview(type){
+  previewType=type;
+  document.getElementById('tabCust').className='print-tab'+(type==='customer'?' active':'');
+  document.getElementById('tabKit').className='print-tab'+(type==='kitchen'?' active':'');
+  document.getElementById('previewWrap').innerHTML=buildHtmlReceipt(currentPrintData,type);
+}
+function setBtPrintStatus(msg){ document.getElementById('btPrintStatus').textContent=msg; }
+
+async function doPrint(){
+  if(!currentPrintData) return;
+  if(printMode==='bluetooth' && btChar){
+    await printViaBluetooth(currentPrintData);
+  } else {
+    printViaWindow(currentPrintData);
+  }
+}
+
+async function printViaBluetooth(tx){
+  setBtPrintStatus('⏳ Mengirim ke printer...');
+  try {
+    // Cetak customer
+    setBtPrintStatus('⏳ Mencetak struk pelanggan...');
+    await btSend(buildEscposReceipt(tx,'customer'));
+    await new Promise(r=>setTimeout(r,1500));
+    // Cetak dapur
+    setBtPrintStatus('⏳ Mencetak struk dapur...');
+    await btSend(buildEscposReceipt(tx,'kitchen'));
+    setBtPrintStatus('✅ 2 struk berhasil dicetak!');
+    showToast('✅ 2 struk dicetak!');
+    setTimeout(closePrintModal,1800);
+  } catch(e){
+    setBtPrintStatus('❌ Gagal: '+e.message);
+    showToast('Gagal cetak BT, coba print dialog','error');
+    setTimeout(()=>printViaWindow(tx),1000);
+  }
+}
+
+function printViaWindow(tx){
+  const w=window.open('','_blank','width=240,height=700');
+  if(!w){ showToast('Izinkan popup untuk print','error'); return; }
+  const css=`@page{margin:0;size:58mm auto}body{margin:0;padding:0;font-family:'Courier New',monospace;font-size:9pt;width:58mm}.receipt{padding:3mm 2mm;width:54mm}.rc{text-align:center}.rb{font-weight:bold}.rl{border-top:1px dashed #000;margin:2mm 0}.rr{display:flex;justify-content:space-between}.rn{flex:1;word-break:break-word}.ri{text-align:right;white-space:nowrap;padding-left:2mm}.pb{page-break-after:always}`;
+  const cust=buildPrintHtml(tx,'customer');
+  const kit=buildPrintHtml(tx,'kitchen');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${css}</style></head><body><div class="receipt">${cust}</div><div class="pb"></div><div class="receipt">${kit}</div></body></html>`);
+  w.document.close(); w.focus();
+  setTimeout(()=>w.print(),500);
+}
+
+function buildPrintHtml(tx,type){
+  const now=new Date(tx.time);
+  const tgl=now.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const jam=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  let rows='';
+  if(type==='customer'){
+    rows=tx.items.map(i=>`<div class="rr"><span class="rn">${i.name}</span><span class="ri">${i.qty}x</span></div><div class="rr"><span></span><span class="ri">${fmtRp(i.price*i.qty)}</span></div>${i.note?`<div style="font-size:8pt">  Ket: ${i.note}</div>`:''}`).join('');
+  } else {
+    rows=tx.items.map(i=>`<div class="rr rb" style="font-size:11pt"><span>${i.name}</span><span>${i.qty}x</span></div>${i.note?`<div style="font-size:8pt">  >> ${i.note}</div>`:''}`).join('');
+  }
+  return `<div class="rc rb" style="font-size:13pt">MG SPOT</div>
+<div class="rc" style="font-size:8pt">Makanan &amp; Minuman</div>
+<div class="rl"></div>
+<div class="rc rb">${type==='customer'?'STRUK PELANGGAN':'STRUK DAPUR'}</div>
+<div class="rl"></div>
+<div class="rr"><span>No</span><span>${tx.id}</span></div>
+<div class="rr"><span>Tgl</span><span>${tgl} ${jam}</span></div>
+<div class="rr"><span>Meja</span><span>${tx.customer}</span></div>
+<div class="rl"></div>
+${rows}
+${type==='customer'?`<div class="rl"></div><div class="rr rb"><span>TOTAL</span><span>${fmtRp(tx.total)}</span></div><div class="rl"></div><div class="rc" style="font-size:8pt">Terima kasih sudah berkunjung!</div>`:`<div class="rl"></div><div class="rc rb">** SEGERA DIPROSES **</div>`}
+<div style="height:15mm"></div>`;
+}
+
+// HTML preview receipt (on-screen)
+function buildHtmlReceipt(tx,type){
+  if(!tx) return '';
+  const now=new Date(tx.time);
+  const tgl=now.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const jam=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  let rows='';
+  if(type==='customer'){
+    rows=tx.items.map(i=>`
+      <div class="receipt-row"><span class="receipt-item-name">${i.name}</span><span class="receipt-item-right">${i.qty}x${fmtShort(i.price)}</span></div>
+      <div class="receipt-row"><span></span><span class="receipt-item-right">${fmtRp(i.price*i.qty)}</span></div>
+      ${i.note?`<div style="color:#555;font-size:10px">  Ket: ${i.note}</div>`:''}
+    `).join('');
+  } else {
+    rows=tx.items.map(i=>`
+      <div class="receipt-row receipt-bold" style="font-size:13px"><span>${i.name}</span><span>${i.qty}x</span></div>
+      ${i.note?`<div style="font-size:10px">  >> ${i.note}</div>`:''}
+    `).join('');
+  }
+  return `<div class="receipt">
+    <div class="receipt-center receipt-bold" style="font-size:14px">MG SPOT</div>
+    <div class="receipt-center" style="font-size:9px">Makanan & Minuman</div>
+    <div class="receipt-line"></div>
+    <div class="receipt-center receipt-bold">${type==='customer'?'STRUK PELANGGAN':'STRUK DAPUR'}</div>
+    <div class="receipt-line"></div>
+    <div class="receipt-row"><span>No</span><span>${tx.id}</span></div>
+    <div class="receipt-row"><span>Tgl</span><span>${tgl} ${jam}</span></div>
+    <div class="receipt-row"><span>Meja</span><span>${tx.customer}</span></div>
+    <div class="receipt-line"></div>
+    ${rows}
+    ${type==='customer'?`<div class="receipt-line"></div><div class="receipt-row receipt-bold"><span>TOTAL</span><span>${fmtRp(tx.total)}</span></div><div class="receipt-line"></div><div class="receipt-center" style="font-size:9px">Terima kasih sudah berkunjung! 😊</div>`:`<div class="receipt-line"></div><div class="receipt-center receipt-bold">** SEGERA DIPROSES **</div>`}
+    <div style="height:16px"></div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+//  MENU MANAGEMENT
+// ══════════════════════════════════════════
+function submitMenu(){
+  const id=document.getElementById('editId').value;
+  const name=document.getElementById('inpName').value.trim();
+  const cat=document.getElementById('inpCat').value.trim()||'Lainnya';
+  const emoji=document.getElementById('inpEmoji').value.trim()||'🍽️';
+  const hpp=parseInt(document.getElementById('inpHpp').value)||0;
+  const price=parseInt(document.getElementById('inpPrice').value)||0;
+  if(!name){ showToast('Nama menu wajib diisi','error'); return; }
+  if(price<=0){ showToast('Harga jual harus > 0','error'); return; }
+  if(id){
+    const idx=menus.findIndex(m=>m.id==id);
+    if(idx>=0) menus[idx]={id:parseInt(id),name,category:cat,emoji,hpp,price};
+    showToast('Menu diperbarui'); cancelEdit();
+  } else {
+    const newId=menus.length?Math.max(...menus.map(m=>m.id))+1:1;
+    menus.push({id:newId,name,category:cat,emoji,hpp,price});
+    showToast(emoji+' '+name+' ditambahkan'); clearForm();
+  }
+  saveMenus(); renderMenuList(); renderKasir();
+}
+function clearForm(){ ['inpName','inpCat','inpEmoji','inpHpp','inpPrice','editId'].forEach(id=>document.getElementById(id).value=''); }
+function cancelEdit(){
+  clearForm();
+  document.getElementById('formMode').textContent='+ Tambah Menu Baru';
+  document.getElementById('btnCancelEdit').style.display='none';
+  document.getElementById('btnSubmitMenu').textContent='Simpan Menu';
+}
+function editMenu(id){
+  const m=menus.find(x=>x.id===id); if(!m) return;
+  document.getElementById('editId').value=m.id;
+  document.getElementById('inpName').value=m.name;
+  document.getElementById('inpCat').value=m.category;
+  document.getElementById('inpEmoji').value=m.emoji||'';
+  document.getElementById('inpHpp').value=m.hpp;
+  document.getElementById('inpPrice').value=m.price;
+  document.getElementById('formMode').textContent='✏️ Edit Menu';
+  document.getElementById('btnCancelEdit').style.display='block';
+  document.getElementById('btnSubmitMenu').textContent='Update Menu';
+  goPage('menu'); window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteMenu(id){
+  const m=menus.find(x=>x.id===id); if(!m) return;
+  if(!confirm('Hapus "'+m.name+'"?')) return;
+  menus=menus.filter(x=>x.id!==id); saveMenus(); renderMenuList(); renderKasir();
+  showToast(m.name+' dihapus');
+}
+function renderMenuList(){
+  const list=document.getElementById('menuListItems');
+  document.getElementById('menuCountLabel').textContent=menus.length+' item menu';
+  if(!menus.length){ list.innerHTML=`<div class="empty-state"><p>Belum ada menu</p></div>`; return; }
+  const bycat={};
+  menus.forEach(m=>{ if(!bycat[m.category]) bycat[m.category]=[]; bycat[m.category].push(m); });
+  list.innerHTML=Object.entries(bycat).map(([cat,items])=>`
+    <div style="font-size:12px;color:var(--accent);font-weight:700;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.5px">${cat}</div>
+    ${items.map(m=>`<div class="menu-list-item">
+      <div class="menu-list-emoji">${m.emoji||'🍽️'}</div>
+      <div class="menu-list-info">
+        <div class="menu-list-name">${m.name}</div>
+        <div class="menu-list-meta">HPP: ${fmtRp(m.hpp)} | Jual: ${fmtRp(m.price)} | Margin: ${Math.round((m.price-m.hpp)/m.price*100)}%</div>
+      </div>
+      <div class="menu-list-actions">
+        <button class="btn-icon edit" onclick="editMenu(${m.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="btn-icon del" onclick="deleteMenu(${m.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+      </div>
+    </div>`).join('')}
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+//  RIWAYAT
+// ══════════════════════════════════════════
+function renderTx(){
+  const list=document.getElementById('txList');
+  if(!transactions.length){ list.innerHTML=`<div class="empty-state"><p>Belum ada transaksi</p></div>`; return; }
+  list.innerHTML=transactions.slice(0,50).map(tx=>{
+    const d=new Date(tx.time);
+    return `<div class="tx-item">
+      <div class="tx-header">
+        <div>
+          <div class="tx-customer">${tx.customer}</div>
+          <div class="tx-id">${tx.id}</div>
+          <div class="tx-time">${d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}, ${d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+        <div class="tx-total">${fmtRp(tx.total)}</div>
+      </div>
+      <div class="tx-items">${tx.items.map(i=>i.name+'x'+i.qty).join(', ')}</div>
+      <div class="tx-actions">
+        <button class="btn-reprint" onclick="reprintTx('${tx.id}')">🖨 Cetak Ulang</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function reprintTx(id){
+  const tx=transactions.find(t=>t.id===id); if(!tx) return;
+  currentPrintData=tx; showPrintModal(tx);
+}
+
+// ══════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════
+function fmtRp(n){ return 'Rp '+n.toLocaleString('id-ID'); }
+function fmtShort(n){ return n>=1000?(n/1000).toFixed(0)+'k':n; }
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  clearTimeout(t._to); t._to=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+renderKasir();
+document.getElementById('printModeLabel').textContent=printMode==='bluetooth'?'Bluetooth':'Print Dialog (Popup)';
+</script>
+</body>
+</html>
